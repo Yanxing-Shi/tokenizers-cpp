@@ -4,6 +4,7 @@ project(tokenizers_cpp C CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_CXX_FLAGS "-O0 -Wall -fPIC")
 
 include(FetchContent)
 
@@ -141,9 +142,16 @@ if (CMAKE_SYSTEM_NAME STREQUAL "iOS")
 endif()
 add_subdirectory(sentencepiece sentencepiece EXCLUDE_FROM_ALL)
 
-add_library(tokenizers_c INTERFACE ${TOKENIZERS_RUST_LIB})
-target_link_libraries(tokenizers_c INTERFACE ${TOKENIZERS_RUST_LIB} ${TOKENIZERS_C_LINK_LIBS})
+add_library(tokenizers_c SHARED ${TOKENIZERS_RUST_LIB})
+set_target_properties(tokenizers_c PROPERTIES LINKER_LANGUAGE C)
+target_link_libraries(tokenizers_c PUBLIC ${TOKENIZERS_RUST_LIB} ${TOKENIZERS_C_LINK_LIBS})
 
-add_library(tokenizers_cpp STATIC $<TARGET_OBJECTS:tokenizer_cpp_objs>)
-target_link_libraries(tokenizers_cpp PRIVATE tokenizers_c sentencepiece-static ${TOKENIZERS_CPP_LINK_LIBS})
+add_library(tokenizers_cpp SHARED $<TARGET_OBJECTS:tokenizer_cpp_objs>)
+set_target_properties(tokenizers_cpp PROPERTIES LINKER_LANGUAGE CXX)
+set_target_properties(tokenizers_cpp PROPERTIES PREFIX "")
+target_link_libraries(tokenizers_cpp PUBLIC tokenizers_c sentencepiece-static ${TOKENIZERS_CPP_LINK_LIBS})
 target_include_directories(tokenizers_cpp PUBLIC ${TOKENIZERS_CPP_INCLUDE})
+
+# make install target tokenizers_cpp 
+install(DIRECTORY ${TOKENIZERS_CPP_INCLUDE}/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+install(TARGETS tokenizers_cpp DESTINATION ${CMAKE_INSTALL_LIBDIR})
